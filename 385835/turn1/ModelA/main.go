@@ -19,13 +19,14 @@ const (
 )
 
 var (
-	mu         sync.Mutex
-	workerChan = make(chan bool, numWorkers)
+	wg         sync.WaitGroup
+	workerChan = make(chan struct{}, numWorkers)
 	shutdown   = make(chan struct{})
 )
 
 func main() {
 	fmt.Printf("Starting server with %d workers on port %s\n", numWorkers, port)
+
 	// Start worker Goroutines
 	for i := 0; i < numWorkers; i++ {
 		go worker()
@@ -44,22 +45,23 @@ func main() {
 	<-sigChan
 	fmt.Println("Received shutdown signal, shutting down...")
 	close(shutdown)
-	<-workerChan // Wait for all workers to finish
+
+	// Wait for all workers to finish
+	wg.Wait()
 	fmt.Println("Server shut down gracefully.")
 }
 
 func worker() {
+	wg.Add(1) // Add one to wait group for each worker
+	defer wg.Done()
+
 	for {
 		select {
 		case <-shutdown:
-			mu.Lock()
-			workerChan <- true
-			mu.Unlock()
 			fmt.Println("Worker shutting down.")
 			return
 		default:
 			// Handle incoming requests here
-			// For simplicity, we'll just simulate work
 			time.Sleep(time.Duration(rand.Intn(5)) * time.Second)
 			fmt.Println("Worker processed a request.")
 		}
