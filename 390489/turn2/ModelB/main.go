@@ -1,6 +1,7 @@
 package main  
 import (  
     "fmt"
+    "io"
     "math/rand"
     "net/http"
     "sync"
@@ -8,68 +9,60 @@ import (
 )
 
 const (
-    apiUrl1 = "https://jsonplaceholder.typicode.com/todos/1" 
-    apiUrl2 = "https://jsonplaceholder.typicode.com/todos/2" 
-    // Add more API URLs here
+    apiUrl  = "https://jsonplaceholder.typicode.com/todos/"
+    numRequests = 5 // Number of concurrent API calls
 )
 
-// API Request struct with its own timeout
-type apiRequest struct {
-    url     string
-    timeout time.Duration
-}
+func simulateApiCall(url string, timeout time.Duration, ch chan<- string) {
+    defer close(ch) // Close the channel after the goroutine ends
 
-func simulateApiCall(req apiRequest, ch chan<- string, wg *sync.WaitGroup) {
-    defer wg.Done()
-
-    // Simulate API call with a random delay within the request timeout
-    delay := time.Duration(time.Second) + time.Duration(rand.Intn(int(req.timeout)))*time.Second
+    // Simulate API call with a random delay
+    delay := time.Second + time.Duration(rand.Intn(2))*time.Second
     time.Sleep(delay)
-    
-    resp, err := http.Get(req.url)
+
+    // Make the HTTP GET request with the specified timeout
+    client := &http.Client{Timeout: timeout}
+    resp, err := client.Get(url)
     if err != nil {
-        ch <- fmt.Sprintf("Error for %s: %v", req.url, err)
+        ch <- fmt.Sprintf("Error: %v", err)
         return
     }
     defer resp.Body.Close()
-    body, err := ioutil.ReadAll(resp.Body)
+
+    // Read the response body and send it to the channel
+    body, err := io.ReadAll(resp.Body)
     if err != nil {
-        ch <- fmt.Sprintf("Error reading response body for %s: %v", req.url, err)
+        ch <- fmt.Sprintf("Error reading response body: %v", err)
         return
     }
-    ch <- fmt.Sprintf("Response for %s: %s", req.url, string(body))
+    ch <- string(body)
 }
 
-func main() {
-    // Create a channel to receive responses
-    responseChan := make(chan string)
+func main() {  
+    rand.Seed(time.Now().UnixNano())
+    var wg sync.WaitGroup // Create a WaitGroup to manage goroutines
+    wg.Add(numRequests) // Increment the WaitGroup counter for each goroutine
 
-    // Set up waitgroup to track the number of running goroutines
-    var wg sync.WaitGroup
-    
-    // Define the API requests with individual timeouts
-    requests := []apiRequest{
-        {apiUrl1, 3 * time.Second}, 
-        {apiUrl2, 2 * time.Second}, 
-        // Add more requests with timeouts here
-    }
-   
-    for _, req := range requests {
-        // Add 1 to the waitgroup for each goroutine starting
-        wg.Add(1)
-        go simulateApiCall(req, responseChan, &wg)
-    }
+    for i := 1; i <= numRequests; i++ {
+        url := fmt.Sprintf("%s%d", apiUrl, i)
+        timeout := time.Second + time.Duration(rand.Intn(3))*time.Second
+        
+        go func(url string, timeout time.Duration) {
+            defer wg.Done() // Decrement the WaitGroup counter when the goroutine ends
+            responseChan := make(chan string)
 
-    // Start receiving responses from the channel until all goroutines are complete
-    go func() {
-        for response := range responseChan {
-            fmt.Println(response)
-        }
-    }()
+            // Start the API call simulation concurrently
+            go simulateApiCall(url, timeout, responseChan)
+
+            // Use a select statement to handle timeout and response
+            select {
+            case response := <-responseChan:
+                fmt.Printf("Response from %s: %s\n", url, response)
+            case <-time.After(timeout):
+                fmt.Printf("API call to %s timed out.\n", url)
+            }
+        }(url, timeout)
+    }
     
-    // Wait for all goroutines to finish their tasks
-    wg.Wait()
-    
-    close(responseChan) // Close the channel to signal completion to the receiver
-    fmt.Println("All API calls finished.")
+    wg.Wait() // Wait for all goroutines to finish before exiting
 } 
