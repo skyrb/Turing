@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -19,6 +20,7 @@ func main() {
 	defer cancel()
 
 	// Simulate connecting to a database
+	// Replace "driver" and "dataSourceName" with actual database details
 	db, err := sql.Open("driver", "dataSourceName")
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
@@ -27,9 +29,9 @@ func main() {
 
 	// Capture SIGINT (Ctrl+C) and SIGTERM
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, os.Interrupt, os.Kill)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
-	go handleShutdown(ctx, sigChan)
+	go handleShutdown(sigChan, cancel)
 
 	// Launch concurrent worker goroutines
 	for i := 0; i < 10; i++ {
@@ -42,13 +44,11 @@ func main() {
 	fmt.Println("All workers have completed. Shutting down...")
 }
 
-func handleShutdown(ctx context.Context, sigChan <-chan os.Signal) {
+func handleShutdown(sigChan <-chan os.Signal, cancel context.CancelFunc) {
 	select {
 	case <-sigChan:
 		log.Println("Shutdown signal received. Canceling context...")
-		ctx.Cancel()
-	case <-ctx.Done():
-		log.Println("Shutdown initiated from context cancellation.")
+		cancel() // Trigger context cancellation
 	}
 }
 
@@ -65,7 +65,8 @@ func worker(ctx context.Context, id int) {
 		default:
 			// Simulate work
 			log.Printf("Worker %d: Processing transaction...\n", id)
-			// Start a transaction and handle it
+
+			// Simulate a transaction (Replace with real database logic)
 			tx, err := db.BeginTx(ctx, nil)
 			if err != nil {
 				log.Printf("Worker %d: Error starting transaction: %v\n", id, err)
