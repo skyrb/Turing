@@ -1,0 +1,8 @@
+Dear {{.Name}},
+
+Thank you so much for your thoughtful gift of {{.Gift}}. I really appreciate it!
+
+Looking forward to our next meeting.
+
+Warm regards,
+[Your Name]
