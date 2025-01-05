@@ -2,41 +2,31 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
-	"testing"
-	"time"
 )
 
-// Simulates a function that processes a number and may fail.
-func processNumber(num int) (result int, err error) {
-	if num <= 0 {
-		return 0, fmt.Errorf("number must be positive")
+// sumAndError returns the sum of two integers and an error if the sum exceeds 100.
+func sumAndError(a, b int) (int, error) {
+	result := a + b
+	if result > 100 {
+		return 0, fmt.Errorf("sum is greater than 100: %d + %d = %d", a, b, result)
 	}
-	// Simulate work
-	time.Sleep(100 * time.Millisecond)
-	result = num * num
-	return
-}
-
-func BenchmarkProcessNumber(b *testing.B) {
-	rand.Seed(time.Now().UnixNano())
-
-	for i := 0; i < b.N; i++ {
-		num := rand.Intn(10) + 1 // Generate a random positive number
-		_, _ = processNumber(num) // Discard the return values
-	}
+	return result, nil
 }
 
 func main() {
-	rand.Seed(time.Now().UnixNano())
-	num := rand.Intn(10) + 1 // Generate a random positive number
-
-	result, err := processNumber(num)
+	// Example 1: Successful sum
+	result, err := sumAndError(50, 40)
 	if err != nil {
-		fmt.Println("Error processing number:", err)
+		fmt.Println("Error:", err)
 	} else {
-		fmt.Println("Result:", result)
+		fmt.Println("Sum:", result)
 	}
 
-	testing.Main()
+	// Example 2: Sum exceeds 100
+	result, err = sumAndError(60, 50)
+	if err != nil {
+		fmt.Println("Error:", err)
+	} else {
+		fmt.Println("Sum:", result)
+	}
 }

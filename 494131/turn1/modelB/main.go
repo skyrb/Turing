@@ -1,52 +1,37 @@
-package main
 
-import (
-    "errors"
-    "fmt"
-    "runtime"
-    "runtime/pprof"
-    "time"
-)
 
-func myFunction() (int, string, error) {
-    // Simulate some work
-    time.Sleep(1 * time.Second)
-    return 42, "Hello, World!", nil
-}
+package main  
+import (  
+    "errors"  
+    "fmt"  
+)  
 
-func measureAndProfile(f func() (int, string, error)) {
-    start := time.Now()
-    result1, result2, err := f()
-    if err != nil {
-        fmt.Println("Error:", err)
-        return
-    }
-    elapsed := time.Since(start)
+// Function to calculate the area of a circle and return multiple values  
+func calculateArea(radius float64) (float64, error) {  
+    if radius < 0 {  
+        return 0, errors.New("Radius cannot be negative")  
+    }  
+    area := 3.14 * radius * radius  
+    return area, nil  
+}  
 
-    // Write the CPU profile to a file
-    fp, err := os.Create("cpu.prof")
-    if err != nil {
-        fmt.Println("Error writing CPU profile:", err)
-        return
-    }
-    defer fp.Close()
+func main() {  
+    // Call the function with a positive radius  
+    radius := 5.0  
+    area, err := calculateArea(radius)  
+    if err != nil {  
+        fmt.Println("Error:", err)  
+    } else {  
+        fmt.Println("Area of the circle with radius", radius, "is:", area)  
+    }  
 
-    if err := pprof.StartCPUProfile(fp); err != nil {
-        fmt.Println("Error starting CPU profile:", err)
-        return
-    }
-    defer pprof.StopCPUProfile()
+    // Call the function with a negative radius  
+    radius = -2.0  
+    area, err = calculateArea(radius)  
+    if err != nil {  
+        fmt.Println("Error:", err)  
+    } else {  
+        fmt.Println("Area of the circle with radius", radius, "is:", area)  
+    }  
+}  
 
-    // Simulate some work to consume CPU
-    runtime.Gosched()
-    time.Sleep(2 * time.Second)
-
-    fmt.Println("Execution time:", elapsed)
-    fmt.Println("Potential bottlenecks identified by profiling:")
-    pprof.Lookup("goroutine").WriteTo(os.Stdout, 1)
-}
-
-func main() {
-    // Measure and profile the function call
-    measureAndProfile(myFunction)
-}
