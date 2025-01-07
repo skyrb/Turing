@@ -1,13 +1,15 @@
 
 
 package main  
-import (
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/widget"
+import (  
+    "fmt"
+    "github.com/fyne-io/fyne/v2"
+    "github.com/fyne-io/fyne/v2/app"
+    "github.com/fyne-io/fyne/v2/container"
+    "github.com/fyne-io/fyne/v2/dialog"
+    "github.com/fyne-io/fyne/v2/widget"
 )
+
 func main() {  
     a := app.New()
     w := a.NewWindow("Fyne Demo")

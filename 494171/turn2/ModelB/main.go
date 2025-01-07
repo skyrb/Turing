@@ -1,72 +1,65 @@
-
-
 package main
 
 import (
-	"fmt"
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"log"
 )
 
 func main() {
-	a := app.New()
-	w := a.NewWindow("Lifecycle Event Demo")
+	myApp := app.New()
+	defer myApp.Quit()
 
-	// Custom variable to keep track of the last selected status
-	lastSelected := "None"
+	mainWindow := myApp.NewWindow("GUI with Lifecycle Handling")
+	defer mainWindow.Close()
 
-	// Create a radio group with some options
-	options := []string{"Option 1", "Option 2", "Option 3"}
-	radioGroup := widget.NewRadioGroup(options, func(value string) {
-		lastSelected = value
-		fmt.Println("Radio Group Selected:", value)
-	})
-	// Wrap the radio group in a scroll container to handle more options
-	radioScroll := container.NewScroll(radioGroup)
+	// Counter to keep track of the number of clicks
+	clickCount := 0
 
-	// Create a button to display the selected option
-	showButton := widget.NewButton("Show Selected", func() {
-		dialog.ShowMessage("Selected Option", lastSelected, w)
+	// Create a label to display the click count
+	clickCountLabel := widget.NewLabel("Click Count: 0")
+
+	// Create a button to increment the click count
+	incrementButton := widget.NewButton("Increment", func() {
+		clickCount++
+		clickCountLabel.SetText("Click Count: " + string(clickCount))
 	})
 
-	// Create a button to close the window programatically
-	closeButton := widget.NewButton("Close Window", func() {
-		w.Close() // Closes the window
+	// Create a button to open a confirmation dialog
+	confirmButton := widget.NewButton("Confirm", func() {
+		confirmDialog := dialog.NewConfirm("Confirm Action", "Are you sure?", func(confirmed bool) {
+			if confirmed {
+				dialog.NewInformation("Confirmed", "Action confirmed!", mainWindow).Show()
+			} else {
+				dialog.NewInformation("Cancelled", "Action cancelled.", mainWindow).Show()
+			}
+		}, mainWindow)
+		confirmDialog.Show()
 	})
 
-	// Register a lifecycle event handler for WindowClose to show a confirmation dialog
-	w.SetOnClose(func() {
-		response := dialog.ShowConfirm("Confirm", "Are you sure you want to close the window?", w)
-		if response {
-			w.SetClosed(true) // Proceed with closing the window
-			// Any cleanup operations or deferred tasks should be performed here
-			fmt.Println("Window Closed.")
-		}
+	// Handle the main window closing event
+	mainWindow.SetOnClose(func() {
+		// Prompt the user to confirm before closing
+		confirmDialog := dialog.NewConfirm("Close Application", "Are you sure you want to exit?", func(confirmed bool) {
+			if confirmed {
+				log.Println("Application closed by user.")
+				myApp.Quit() // Close the application
+			} else {
+				mainWindow.Show() // Reopen the main window
+			}
+		}, mainWindow)
+		confirmDialog.Show()
 	})
 
-	// Wrap the UI elements in a horizontal box
-	content := container.NewVBox(
-		radioScroll,
-		layout.NewSpacer(), // Add some vertical space
-		container.NewHBox(showButton, layout.NewSpacer(), closeButton),
-	)
+	// Create a vertical box to hold the widgets
+	mainWindow.SetContent(container.NewVBox(
+		clickCountLabel,
+		incrementButton,
+		confirmButton,
+	))
 
-	// Apply the content to the window
-	w.SetContent(content)
-
-	// Add defer statement to handle cleanup tasks (e.g., saving settings)
-	defer func() {
-		fmt.Println("Performing cleanup tasks...")
-		// Save user settings or preferences here before application exit
-	}()
-
-	// Show the window and start the application
-	w.ShowAndRun()
-}  
-
- 
+	mainWindow.ShowAndRun()
+}

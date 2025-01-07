@@ -1,46 +1,63 @@
 package main
 
 import (
-	"fmt"
-	"github.com/fyne-io/fyne/v2"
-	"github.com/fyne-io/fyne/v2/app"
-	"github.com/fyne-io/fyne/v2/container"
-	"github.com/fyne-io/fyne/v2/dialog"
-	"github.com/fyne-io/fyne/v2/widget"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/widget"
 )
 
-var clickCount int
-
 func main() {
-	clickCount = 0
-	a := app.New()
-	w := a.NewWindow("Click Counter")
+	// Create a new Fyne application
+	myApp := app.New()
+	defer myApp.Quit() // Ensure application resources are cleaned up on exit
 
-	// Set the main content
-	w.SetContent(container.NewVBox(
-		widget.NewLabelWithText("Click Count: "+fmt.Sprint(clickCount)),
-		widget.NewButton("Click Me", func() {
-			clickCount++
-			w.Resize(w.MinSize()) // Ensure the label updates its size if needed
-		}),
+	// Create the main application window
+	mainWindow := myApp.NewWindow("Form Example")
+	defer mainWindow.Close() // Ensure window resources are cleaned up on exit
+
+	// Set up input fields
+	nameInput := widget.NewEntry()
+	emailInput := widget.NewEntry()
+	nameInput.SetPlaceHolder("Name")
+	emailInput.SetPlaceHolder("Email")
+
+	// Create a submit button
+	submitButton := widget.NewButton("Submit", func() {
+		submitForm(nameInput.Text, emailInput.Text)
+	})
+
+	// Display the form with a grid layout
+	mainWindow.SetContent(container.NewGridWithColumns(1,
+		container.NewHorizontalBox(
+			widget.NewLabel("Name:"),
+			nameInput,
+		),
+		container.NewHorizontalBox(
+			widget.NewLabel("Email:"),
+			emailInput,
+		),
+		container.NewCenterWidget(submitButton),
 	))
 
-	// Register a window close handler
-	w.OnClose = func(ev interface{}) {
-		if dialog.ShowConfirm("Confirm", "Are you sure you want to exit?", w) {
-			// Window should be closed explicitly after confirmation
-			w.Close()
-		} else {
-			// Cancel the close action
-			ev.(fyne.Cancelable).Cancel()
-		}
+	// Show the main window and start the application
+	mainWindow.ShowAndRun()
+}
+
+func submitForm(name, email string) {
+	// Check for empty fields
+	if name == "" || email == "" {
+		dialog.NewError("Fields Required", "Please fill out all required fields.").Show()
+		return
 	}
 
-	// Defer statement to display a closing message even if user cancels
-	defer func() {
-		fmt.Println("Application closing.")
-	}()
+	// Acknowledge successful form submission
+	dialog.NewInformation("Form Submitted", "Your form has been successfully submitted.").Show()
 
-	// Show the window and start the application
-	w.ShowAndRun()
+	// Simulate processing time or any post-submission action
+	// (In this example, we simulate with a defer statement)
+	defer func() {
+		dialog.NewInformation("Processing Complete", "Form processing is complete.").Show()
+	}()
 }
