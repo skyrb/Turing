@@ -1,0 +1,5 @@
+[
+    {"name": "Community Cleanup", "participant_count": 150, "location_id": "loc1"},
+    {"name": "Charity Run", "participant_count": 200, "location_id": "loc2"},
+    {"name": "Neighborhood Watch Meeting", "participant_count": 50, "location_id": "loc1"}
+]
